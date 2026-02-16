@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>China Transit Visa Eligibility Checker</title>
+  <style>
+    :root {
+      --bg: #f5f5f0;
+      --card-bg: #fff;
+      --primary: #c41e3a;
+      --primary-dark: #a01830;
+      --text: #333;
+      --text-light: #666;
+      --border: #ddd;
+      --success: #2e7d32;
+      --success-bg: #e8f5e9;
+      --error: #c62828;
+      --error-bg: #ffebee;
+      --info: #1565c0;
+      --info-bg: #e3f2fd;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    header p {
+      font-size: 0.875rem;
+      color: var(--text-light);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      margin-bottom: 6px;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      font-size: 1rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    select:disabled {
+      background: #f5f5f5;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .section-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary);
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      background: var(--primary);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    button:hover {
+      background: var(--primary-dark);
+    }
+
+    button:active {
+      transform: scale(0.99);
+    }
+
+    #result {
+      display: none;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 16px;
+    }
+
+    #result.eligible {
+      display: block;
+      background: var(--success-bg);
+      border: 1.5px solid var(--success);
+    }
+
+    #result.ineligible {
+      display: block;
+      background: var(--error-bg);
+      border: 1.5px solid var(--error);
+    }
+
+    #result.info {
+      display: block;
+      background: var(--info-bg);
+      border: 1.5px solid var(--info);
+    }
+
+    #result h3 {
+      font-size: 1.125rem;
+      margin-bottom: 8px;
+    }
+
+    #result.eligible h3 { color: var(--success); }
+    #result.ineligible h3 { color: var(--error); }
+    #result.info h3 { color: var(--info); }
+
+    #result p, #result li {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    #result ul {
+      margin-top: 8px;
+      padding-left: 20px;
+    }
+
+    #result li {
+      margin-bottom: 4px;
+    }
+
+    .disclaimer {
+      margin-top: 24px;
+      padding: 12px;
+      font-size: 0.75rem;
+      color: var(--text-light);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 480px) {
+      .row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>China Transit Visa Checker</h1>
+      <p>Check your eligibility for visa-free transit through mainland China</p>
+    </header>
+
+    <div class="card">
+      <div class="field">
+        <label for="passport">Passport Country</label>
+        <select id="passport">
+          <option value="">Select your passport country...</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Entry</div>
+      <div class="row">
+        <div class="field">
+          <label for="entry-method">Arriving by</label>
+          <select id="entry-method">
+            <option value="">Select...</option>
+            <option value="air">Air</option>
+            <option value="rail">Rail</option>
+            <option value="sea">Sea</option>
+            <option value="land">Land</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="entry-port">Entry Port</label>
+          <select id="entry-port" disabled>
+            <option value="">Select method first...</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-label">Exit</div>
+      <div class="row">
+        <div class="field">
+          <label for="exit-method">Departing by</label>
+          <select id="exit-method">
+            <option value="">Select...</option>
+            <option value="air">Air</option>
+            <option value="rail">Rail</option>
+            <option value="sea">Sea</option>
+            <option value="land">Land</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="exit-port">Exit Port</label>
+          <select id="exit-port" disabled>
+            <option value="">Select method first...</option>
+          </select>
+        </div>
+      </div>
+      <div class="field" style="margin-top: 16px;">
+        <label for="destination">Destination (next country)</label>
+        <select id="destination">
+          <option value="">Select your next destination...</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="check-btn">Check Eligibility</button>
+
+    <div id="result"></div>
+
+    <div class="disclaimer">
+      This tool is for reference only. Visa policies change frequently.
+      Always verify with the nearest Chinese embassy or consulate before travel.
+    </div>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
