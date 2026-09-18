@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>China Transit Visa Eligibility Checker</title>
+  <title>China Visa-Free Transit Checker</title>
+  <meta name="description" content="Check whether you qualify for China's 240-hour (10-day) visa-free transit policy, or for 30-day visa-free entry.">
   <style>
     :root {
       --bg: #f5f5f0;
@@ -42,7 +43,7 @@
 
     header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 24px;
     }
 
     header h1 {
@@ -56,6 +57,18 @@
       font-size: 0.875rem;
       color: var(--text-light);
     }
+
+    .policy-note {
+      background: var(--info-bg);
+      border: 1px solid #bbdefb;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      font-size: 0.8125rem;
+      color: var(--text);
+    }
+
+    .policy-note strong { color: var(--info); }
 
     .card {
       background: var(--card-bg);
@@ -104,15 +117,9 @@
       border-color: var(--primary);
     }
 
-    select:disabled {
-      background: #f5f5f5;
-      color: #999;
-      cursor: not-allowed;
-    }
-
     .row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr 2fr;
       gap: 12px;
     }
 
@@ -187,14 +194,28 @@
       color: var(--text);
     }
 
+    #result p { margin-bottom: 8px; }
+
     #result ul {
-      margin-top: 8px;
+      margin: 8px 0 12px;
       padding-left: 20px;
     }
 
     #result li {
       margin-bottom: 4px;
     }
+
+    #result .regions {
+      font-size: 0.8125rem;
+      line-height: 1.7;
+    }
+
+    #result .muted {
+      font-size: 0.8125rem;
+      color: var(--text-light);
+    }
+
+    #result a { color: var(--info); }
 
     .disclaimer {
       margin-top: 24px;
@@ -204,6 +225,8 @@
       text-align: center;
       line-height: 1.5;
     }
+
+    .disclaimer a { color: var(--text-light); }
 
     @media (max-width: 480px) {
       .row {
@@ -215,9 +238,17 @@
 <body>
   <div class="container">
     <header>
-      <h1>China Transit Visa Checker</h1>
-      <p>Check your eligibility for visa-free transit through mainland China</p>
+      <h1>China Visa-Free Transit Checker</h1>
+      <p>Check your eligibility for visa-free entry or transit through mainland China</p>
     </header>
+
+    <div class="policy-note">
+      <strong>Policy updated 17 December 2024.</strong>
+      The old 72-hour and 144-hour transit policies were replaced by a single
+      <strong>240-hour (10-day)</strong> policy. Entry and exit ports no longer have to
+      be in the same region, and you may now cross provincial boundaries within the
+      permitted areas.
+    </div>
 
     <div class="card">
       <div class="field">
@@ -234,7 +265,7 @@
         <div class="field">
           <label for="entry-method">Arriving by</label>
           <select id="entry-method">
-            <option value="">Select...</option>
+            <option value="">Any method</option>
             <option value="air">Air</option>
             <option value="rail">Rail</option>
             <option value="sea">Sea</option>
@@ -243,9 +274,7 @@
         </div>
         <div class="field">
           <label for="entry-port">Entry Port</label>
-          <select id="entry-port" disabled>
-            <option value="">Select method first...</option>
-          </select>
+          <select id="entry-port"></select>
         </div>
       </div>
     </div>
@@ -256,7 +285,7 @@
         <div class="field">
           <label for="exit-method">Departing by</label>
           <select id="exit-method">
-            <option value="">Select...</option>
+            <option value="">Any method</option>
             <option value="air">Air</option>
             <option value="rail">Rail</option>
             <option value="sea">Sea</option>
@@ -265,13 +294,11 @@
         </div>
         <div class="field">
           <label for="exit-port">Exit Port</label>
-          <select id="exit-port" disabled>
-            <option value="">Select method first...</option>
-          </select>
+          <select id="exit-port"></select>
         </div>
       </div>
       <div class="field" style="margin-top: 16px;">
-        <label for="destination">Destination (next country)</label>
+        <label for="destination">Destination (next country or region)</label>
         <select id="destination">
           <option value="">Select your next destination...</option>
         </select>
@@ -283,8 +310,10 @@
     <div id="result"></div>
 
     <div class="disclaimer">
-      This tool is for reference only. Visa policies change frequently.
-      Always verify with the nearest Chinese embassy or consulate before travel.
+      Reference only &mdash; policy data last reviewed 18 September 2026.
+      Visa rules change frequently. Always verify with the
+      <a href="https://en.nia.gov.cn/n147418/n147463/c183412/content.html" target="_blank" rel="noopener">National
+      Immigration Administration</a> or your nearest Chinese embassy before you travel.
     </div>
   </div>
 
