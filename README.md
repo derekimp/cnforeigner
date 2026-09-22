@@ -29,6 +29,29 @@ The checks run in order, and the first one that applies wins:
 5. Otherwise → eligible for 240 hours, with the permitted stay areas and the documents
    required at the border.
 
+## Tests
+
+```sh
+npm install
+npm test
+```
+
+The suite drives the real page in Chromium and asserts on what a user sees: the
+result banner and its wording, across cross-region transit, the 30-day path,
+24-hour-only nationalities, recently added nationalities, unlisted ports and
+incomplete input. It also checks invariants in `data.js` that a careless edit
+would break — duplicate entries, nationalities that are not selectable in the
+passport dropdown, a region listed as both permitted and excluded, ports in a
+region with no permitted stay area, and `STAY_REGIONS` drifting out of sync with
+`POLICY.regionCount`.
+
+Run it after any change to the policy data. CI runs it on every push.
+
+If your environment already has a Chromium, point at it instead of downloading
+one: `CHROMIUM_PATH=/path/to/chromium npm test`.
+
+The site itself has no dependencies — Playwright is only for the tests.
+
 ## Policy data
 
 Policy last reviewed: **18 September 2026**. Source: the
@@ -56,7 +79,7 @@ Everything policy-related lives in `data.js`:
 - `STAY_REGIONS` / `EXCLUDED_REGIONS` — where you may travel
 
 Bump `POLICY.reviewedOn` and the date in the `index.html` disclaimer whenever you
-re-check the source.
+re-check the source, and run `npm test` before committing.
 
 ## Disclaimer
 
