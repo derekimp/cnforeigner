@@ -246,8 +246,10 @@ const TRANSIT_REQUIREMENTS = [
 ];
 
 // ------------------------------------------------------------
-// Destinations. Hong Kong, Macao and Taiwan count as third
-// regions for transit purposes; mainland China does not.
+// Countries and regions outside mainland China. Used for both
+// ends of the journey: where you arrive from and where you go
+// on to. Hong Kong, Macao and Taiwan count as third regions for
+// transit purposes; mainland China does not.
 // ------------------------------------------------------------
 const DESTINATIONS = [
   "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina",

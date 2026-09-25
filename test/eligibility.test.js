@@ -16,13 +16,15 @@ const OTHER_PORT = "__other__";
 const cases = [
   {
     name: "eligible nationality, ports in different regions",
-    passport: "United States", entry: "PVG", exit: "CAN", destination: "Japan",
+    passport: "United States", origin: "United States", entry: "PVG", exit: "CAN",
+    destination: "Japan",
     expect: "eligible",
     contains: ["240", "no longer have to be in the same region"]
   },
   {
     name: "30-day visa-free nationality skips the transit rules",
-    passport: "Germany", entry: "PEK", exit: "PEK", destination: "Thailand",
+    passport: "Germany", origin: "Germany", entry: "PEK", exit: "PEK",
+    destination: "Thailand",
     expect: "eligible",
     contains: ["30 days"],
     // The transit branch is the only one that lists border documents.
@@ -30,32 +32,70 @@ const cases = [
   },
   {
     name: "nationality off both lists gets 24-hour transit only",
-    passport: "India", entry: "PEK", exit: "PEK", destination: "Thailand",
+    passport: "India", origin: "India", entry: "PEK", exit: "PEK",
+    destination: "Thailand",
     expect: "info",
     contains: ["24-hour"]
   },
   {
     name: "recently added nationality is flagged with its start date",
-    passport: "Vietnam", entry: "KMG", exit: "CAN", destination: "Singapore",
+    passport: "Vietnam", origin: "Vietnam", entry: "KMG", exit: "CAN",
+    destination: "Singapore",
     expect: "eligible",
     contains: ["20 August 2026"]
   },
   {
     name: "unlisted port is unconfirmed, never a hard no",
-    passport: "United States", entry: OTHER_PORT, exit: "PEK", destination: "Japan",
+    passport: "United States", origin: "United States", entry: OTHER_PORT, exit: "PEK",
+    destination: "Japan",
     expect: "info",
     contains: ["official list"],
     notContains: ["Not eligible"]
   },
   {
     name: "same-region itinerary omits the cross-region note",
-    passport: "United States", entry: "PVG", exit: "SHA", destination: "Japan",
+    passport: "United States", origin: "United States", entry: "PVG", exit: "SHA",
+    destination: "Japan",
     expect: "eligible",
     notContains: ["no longer have to be in the same region"]
   },
   {
+    // The third-country rule: arrival and onward country must differ.
+    name: "round trip to the same country fails the third-country rule",
+    passport: "United States", origin: "United States", entry: "PVG", exit: "PVG",
+    destination: "United States",
+    expect: "ineligible",
+    contains: ["third", "Hong Kong"],
+    notContains: ["Eligible"]
+  },
+  {
+    // Hong Kong is a third region, so the China leg still qualifies.
+    name: "same country via Hong Kong satisfies the third-country rule",
+    passport: "United States", origin: "United States", entry: "PVG", exit: "CAN",
+    destination: "Hong Kong",
+    expect: "eligible",
+    contains: ["240"]
+  },
+  {
+    // The third-country rule is a transit rule; 30-day entry is not transit.
+    name: "30-day nationality may still fly a round trip",
+    passport: "Germany", origin: "Germany", entry: "PEK", exit: "PEK",
+    destination: "Germany",
+    expect: "eligible",
+    contains: ["30 days"],
+    notContains: ["Bring with you"]
+  },
+  {
+    // Nationalities off the transit list need a third country too.
+    name: "24-hour nationality on a round trip is told it is not transit",
+    passport: "India", origin: "India", entry: "PEK", exit: "PEK",
+    destination: "India",
+    expect: "ineligible",
+    contains: ["third"]
+  },
+  {
     name: "incomplete form asks for the missing fields",
-    passport: "United States", entry: null, exit: null, destination: null,
+    passport: "United States", origin: null, entry: null, exit: null, destination: null,
     expect: "info",
     contains: ["every field"]
   }
@@ -151,6 +191,7 @@ async function selectPort(page, selector, code) {
   for (const c of cases) {
     await page.reload();
     if (c.passport) await page.selectOption("#passport", c.passport);
+    if (c.origin) await page.selectOption("#origin", c.origin);
     if (c.entry) await selectPort(page, "#entry-port", c.entry);
     if (c.exit) await selectPort(page, "#exit-port", c.exit);
     if (c.destination) await page.selectOption("#destination", c.destination);

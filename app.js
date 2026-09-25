@@ -6,6 +6,7 @@ const entryMethodSelect = document.getElementById("entry-method");
 const entryPortSelect = document.getElementById("entry-port");
 const exitMethodSelect = document.getElementById("exit-method");
 const exitPortSelect = document.getElementById("exit-port");
+const originSelect = document.getElementById("origin");
 const destinationSelect = document.getElementById("destination");
 const checkBtn = document.getElementById("check-btn");
 const resultDiv = document.getElementById("result");
@@ -46,8 +47,11 @@ addGroup(passportSelect, "30-day visa-free entry", visaFreePassports);
 addGroup(passportSelect, `${POLICY.transitHours}-hour visa-free transit`, transitOnlyPassports);
 addGroup(passportSelect, "Visa or 24-hour transit only", otherPassports);
 
-// Destination: anywhere outside mainland China.
-DESTINATIONS.forEach((c) => addOption(destinationSelect, c, c));
+// Both ends of the journey: anywhere outside mainland China.
+DESTINATIONS.forEach((c) => {
+  addOption(originSelect, c, c);
+  addOption(destinationSelect, c, c);
+});
 
 // ============================================================
 // Ports
@@ -92,7 +96,7 @@ exitMethodSelect.addEventListener("change", () => {
   clearResult();
 });
 
-[passportSelect, entryPortSelect, exitPortSelect, destinationSelect].forEach(
+[passportSelect, entryPortSelect, exitPortSelect, originSelect, destinationSelect].forEach(
   (el) => el.addEventListener("change", clearResult)
 );
 
@@ -143,9 +147,10 @@ checkBtn.addEventListener("click", () => {
   const passport = passportSelect.value;
   const entryRaw = entryPortSelect.value;
   const exitRaw = exitPortSelect.value;
+  const origin = originSelect.value;
   const destination = destinationSelect.value;
 
-  if (!passport || !entryRaw || !exitRaw || !destination) {
+  if (!passport || !entryRaw || !exitRaw || !origin || !destination) {
     showResult("info", "Missing information",
       "<p>Please fill in every field before checking.</p>");
     return;
@@ -161,6 +166,7 @@ checkBtn.addEventListener("click", () => {
   }
 
   const safePassport = escapeHtml(passport);
+  const safeOrigin = escapeHtml(origin);
   const safeDestination = escapeHtml(destination);
 
   // The 30-day policy has no transit conditions at all, so it wins outright.
@@ -170,10 +176,34 @@ checkBtn.addEventListener("click", () => {
        visa-free for up to <strong>30 days</strong> under the unilateral visa-free
        policy. You do not need to satisfy any transit conditions: no onward ticket
        to a third country, no designated port, no restricted stay area.</p>
-       <p>You are free to travel anywhere in mainland China, and your onward trip to
-       <strong>${safeDestination}</strong> does not affect this.</p>
+       <p>You are free to travel anywhere in mainland China. Your route
+       (<strong>${safeOrigin}</strong> &rarr; China &rarr; <strong>${safeDestination}</strong>)
+       does not affect this — a return to where you came from is fine, because the
+       third-country rule applies only to the transit policies.</p>
        <p class="muted">This policy currently runs to 31 December 2026 for most
        nationalities. Confirm the end date before you travel.</p>`);
+    return;
+  }
+
+  // Both transit policies require onward travel to a *third* country: the place
+  // you arrive from and the one you leave for have to differ. A round trip
+  // through China is not a transit journey.
+  if (origin === destination) {
+    showResult("ineligible", "Not a transit journey",
+      `<p>You are arriving from <strong>${safeOrigin}</strong> and leaving for
+       <strong>${safeDestination}</strong>. Visa-free transit requires onward travel to a
+       <strong>third</strong> country or region, so the two ends must differ. Returning to
+       where you came from does not qualify under either the ${POLICY.transitHours}-hour
+       or the 24-hour policy.</p>
+       <p>Entering on the transit policy without continuing to a third country is
+       treated as illegal entry, so this is not a technicality to work around.</p>
+       <p>Your options:</p>
+       <ul>
+         <li>Continue to a different country or region. Hong Kong, Macao and Taiwan each
+             count as a third region, so ${safeOrigin} &rarr; China &rarr; Hong Kong
+             qualifies even if you fly home from there afterwards.</li>
+         <li>Apply for a Chinese visa before you travel.</li>
+       </ul>`);
     return;
   }
 
@@ -226,10 +256,11 @@ checkBtn.addEventListener("click", () => {
     : "";
 
   showResult("eligible", `Eligible — ${POLICY.transitHours}-hour visa-free transit`,
-    `<p>As a <strong>${safePassport}</strong> passport holder travelling on to
-     <strong>${safeDestination}</strong>, you qualify for
-     <strong>${POLICY.transitHours} hours (10 days)</strong> in mainland China
-     without a visa.</p>
+    `<p>As a <strong>${safePassport}</strong> passport holder travelling
+     <strong>${safeOrigin}</strong> &rarr; China &rarr; <strong>${safeDestination}</strong>,
+     you qualify for <strong>${POLICY.transitHours} hours (10 days)</strong> in mainland
+     China without a visa. Your two ends differ, so this counts as transit to a third
+     country.</p>
      <ul>
        <li><strong>Entry:</strong> ${escapeHtml(entryPort.name)} (${escapeHtml(entryPort.region)})</li>
        <li><strong>Exit:</strong> ${escapeHtml(exitPort.name)} (${escapeHtml(exitPort.region)})</li>
