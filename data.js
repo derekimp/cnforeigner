@@ -4,7 +4,7 @@
 // Source of truth: National Immigration Administration (NIA)
 //   https://en.nia.gov.cn/n147418/n147463/c183412/content.html
 //
-// Policy last reviewed: 2026-09-18
+// Policy last reviewed: 2026-09-26
 //
 // The 72-hour and 144-hour transit policies were superseded on
 // 2024-12-17 by a single 240-hour (10-day) visa-free transit policy.
@@ -16,7 +16,7 @@
 
 const POLICY = {
   transitHours: 240,
-  reviewedOn: "2026-09-18",
+  reviewedOn: "2026-09-26",
   effectiveFrom: "17 December 2024",
   officialPortCount: 65,
   regionCount: 24,
@@ -59,14 +59,28 @@ const TRANSIT_COUNTRY_ADDED = {
 // Most entries run to 31 December 2026; verify before travel.
 // ------------------------------------------------------------
 const VISA_FREE_30_DAY = [
-  "Andorra", "Argentina", "Austria", "Bahrain", "Belgium", "Brazil",
+  "Andorra", "Argentina", "Australia", "Austria", "Bahrain", "Belgium", "Brazil",
   "Brunei", "Bulgaria", "Canada", "Chile", "Croatia", "Cyprus", "Denmark",
   "Estonia", "Finland", "France", "Germany", "Greece", "Hungary", "Iceland",
   "Ireland", "Italy", "Japan", "Kuwait", "Latvia", "Liechtenstein",
   "Luxembourg", "Malta", "Monaco", "Montenegro", "Netherlands",
-  "North Macedonia", "Norway", "Oman", "Peru", "Poland", "Portugal",
+  "New Zealand", "North Macedonia", "Norway", "Oman", "Peru", "Poland", "Portugal",
   "Romania", "Russia", "Saudi Arabia", "Slovakia", "Slovenia", "South Korea",
   "Spain", "Sweden", "Switzerland", "United Kingdom", "Uruguay"
+];
+
+// ------------------------------------------------------------
+// Mutual (bilateral) visa exemption agreements. Also no transit
+// conditions, but each agreement sets its own terms: most allow
+// up to 30 days per visit, some cap total days per 180.
+// Kept disjoint from VISA_FREE_30_DAY (the tests enforce it).
+// ------------------------------------------------------------
+const MUTUAL_VISA_EXEMPT = [
+  "Albania", "Antigua and Barbuda", "Armenia", "Bahamas", "Barbados",
+  "Belarus", "Bosnia and Herzegovina", "Dominica", "Ecuador", "Fiji",
+  "Georgia", "Grenada", "Kazakhstan", "Malaysia", "Maldives", "Mauritius",
+  "Qatar", "Samoa", "San Marino", "Serbia", "Seychelles", "Singapore",
+  "Solomon Islands", "Suriname", "Thailand", "Tonga", "UAE", "Uzbekistan"
 ];
 
 // ------------------------------------------------------------
@@ -92,12 +106,14 @@ const STAY_REGIONS = [
   { name: "Hubei", scope: "all" },
   { name: "Hunan", scope: "all" },
   { name: "Guangdong", scope: "all" },
-  { name: "Guangxi", scope: "all" },
+  { name: "Guangxi", scope: ["Nanning", "Liuzhou", "Guilin", "Wuzhou", "Beihai",
+    "Fangchenggang", "Qinzhou", "Guigang", "Yulin", "Hezhou", "Hechi", "Laibin"] },
   { name: "Hainan", scope: "all" },
   { name: "Chongqing", scope: "all" },
   { name: "Sichuan", scope: "all" },
   { name: "Guizhou", scope: "all" },
-  { name: "Yunnan", scope: "all" },
+  { name: "Yunnan", scope: ["Kunming", "Yuxi", "Chuxiong", "Honghe", "Wenshan",
+    "Pu'er", "Xishuangbanna", "Dali", "Lijiang"] },
   { name: "Shaanxi", scope: "all" }
 ];
 
@@ -211,6 +227,7 @@ const PORTS = [
   { region: "Guangxi", ports: [
     { name: "Nanning Wuxu International Airport", code: "NNG", method: "air" },
     { name: "Guilin Liangjiang International Airport", code: "KWL", method: "air" },
+    { name: "Beihai Fucheng Airport", code: "BHY", method: "air" },
     { name: "Beihai Port (passenger)", code: "BHY-SEA", method: "sea" }
   ]},
   { region: "Hainan", ports: [
@@ -230,7 +247,9 @@ const PORTS = [
     { name: "Guiyang Longdongbao International Airport", code: "KWE", method: "air" }
   ]},
   { region: "Yunnan", ports: [
-    { name: "Kunming Changshui International Airport", code: "KMG", method: "air" }
+    { name: "Kunming Changshui International Airport", code: "KMG", method: "air" },
+    { name: "Lijiang Sanyi International Airport", code: "LJG", method: "air" },
+    { name: "Xishuangbanna Gasa International Airport", code: "JHG", method: "air" }
   ]},
   { region: "Shaanxi", ports: [
     { name: "Xi'an Xianyang International Airport", code: "XIY", method: "air" }
@@ -252,32 +271,34 @@ const TRANSIT_REQUIREMENTS = [
 // transit purposes; mainland China does not.
 // ------------------------------------------------------------
 const DESTINATIONS = [
-  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Argentina",
-  "Armenia", "Australia", "Austria", "Azerbaijan", "Bahrain", "Bangladesh",
-  "Belarus", "Belgium", "Bhutan", "Bolivia", "Bosnia and Herzegovina",
-  "Botswana", "Brazil", "Brunei", "Bulgaria", "Cambodia", "Cameroon",
-  "Canada", "Chile", "Colombia", "Costa Rica", "Croatia", "Cuba", "Cyprus",
-  "Czech Republic", "Denmark", "Ecuador", "Egypt", "Estonia", "Ethiopia",
-  "Fiji", "Finland", "France", "Georgia", "Germany", "Ghana", "Greece",
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola",
+  "Antigua and Barbuda", "Argentina", "Armenia", "Australia", "Austria",
+  "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus",
+  "Belgium", "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana",
+  "Brazil", "Brunei", "Bulgaria", "Cambodia", "Cameroon", "Canada", "Chile",
+  "Colombia", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic",
+  "Denmark", "Dominica", "Ecuador", "Egypt", "Estonia", "Ethiopia", "Fiji",
+  "Finland", "France", "Georgia", "Germany", "Ghana", "Greece", "Grenada",
   "Guatemala", "Honduras", "Hong Kong", "Hungary", "Iceland", "India",
   "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica",
   "Japan", "Jordan", "Kazakhstan", "Kenya", "Kuwait", "Kyrgyzstan", "Laos",
   "Latvia", "Lebanon", "Libya", "Liechtenstein", "Lithuania", "Luxembourg",
-  "Macao", "Madagascar", "Malaysia", "Maldives", "Mali", "Malta", "Mexico",
-  "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco", "Mozambique",
-  "Myanmar", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Nigeria",
-  "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Panama",
-  "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal",
-  "Qatar", "Romania", "Russia", "Saudi Arabia", "Senegal", "Serbia",
-  "Singapore", "Slovakia", "Slovenia", "South Africa", "South Korea", "Spain",
-  "Sri Lanka", "Sudan", "Sweden", "Switzerland", "Syria", "Taiwan",
-  "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Tunisia", "Turkey",
-  "Turkmenistan", "UAE", "Uganda", "Ukraine", "United Kingdom",
-  "United States", "Uruguay", "Uzbekistan", "Venezuela", "Vietnam", "Yemen",
-  "Zambia", "Zimbabwe"
+  "Macao", "Madagascar", "Malaysia", "Maldives", "Mali", "Malta",
+  "Mauritius", "Mexico", "Moldova", "Monaco", "Mongolia", "Montenegro",
+  "Morocco", "Mozambique", "Myanmar", "Nepal", "Netherlands", "New Zealand",
+  "Nicaragua", "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman",
+  "Pakistan", "Panama", "Papua New Guinea", "Paraguay", "Peru",
+  "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Samoa",
+  "San Marino", "Saudi Arabia", "Senegal", "Serbia", "Seychelles",
+  "Singapore", "Slovakia", "Slovenia", "Solomon Islands", "South Africa",
+  "South Korea", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden",
+  "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand",
+  "Timor-Leste", "Tonga", "Tunisia", "Turkey", "Turkmenistan", "UAE",
+  "Uganda", "Ukraine", "United Kingdom", "United States", "Uruguay",
+  "Uzbekistan", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
 ];
 
 // Passport dropdown needs every nationality the tool knows about.
 const ALL_COUNTRIES = [...new Set([
-  ...DESTINATIONS, ...TRANSIT_COUNTRIES, ...VISA_FREE_30_DAY
+  ...DESTINATIONS, ...TRANSIT_COUNTRIES, ...VISA_FREE_30_DAY, ...MUTUAL_VISA_EXEMPT
 ])].filter((c) => c !== "Hong Kong" && c !== "Macao" && c !== "Taiwan").sort();

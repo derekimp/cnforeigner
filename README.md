@@ -2,7 +2,8 @@
 
 A single-page tool for working out whether you can enter mainland China without a
 visa: either under the **240-hour (10-day) visa-free transit policy**, or under the
-**30-day unilateral visa-free policy**, whichever applies to your passport.
+**30-day unilateral visa-free policy**, or under a **mutual visa exemption agreement**,
+whichever applies to your passport.
 
 No build step, no dependencies. Open `index.html` in a browser and it runs.
 
@@ -22,11 +23,16 @@ The checks run in order, and the first one that applies wins:
 2. **Passport is on the 30-day visa-free list** → no visa needed, and none of the
    transit conditions apply. This is reported first because it is a better outcome
    than transit for anyone who qualifies.
-3. **Passport is not on the 240-hour transit list** → 24-hour airside transit only.
-4. **Either port is not a designated port** → reported as unconfirmed, with a pointer
+3. **Passport has a mutual visa exemption agreement with China** → no visa needed,
+   usually up to 30 days, on terms set by each agreement.
+4. **Arriving from and leaving for the same country** → not a transit journey. Both
+   transit policies require onward travel to a *third* country or region (Hong Kong,
+   Macao and Taiwan count as third regions).
+5. **Passport is not on the 240-hour transit list** → 24-hour airside transit only.
+6. **Either port is not a designated port** → reported as unconfirmed, with a pointer
    to the official list. Never reported as ineligible, since this tool's port list can
    lag the official one.
-5. Otherwise → eligible for 240 hours, with the permitted stay areas and the documents
+7. Otherwise → eligible for 240 hours, with the permitted stay areas and the documents
    required at the border.
 
 ## Tests
@@ -54,7 +60,7 @@ The site itself has no dependencies — Playwright is only for the tests.
 
 ## Policy data
 
-Policy last reviewed: **18 September 2026**. Source: the
+Policy last reviewed: **26 September 2026**. Source: the
 [National Immigration Administration](https://en.nia.gov.cn/n147418/n147463/c183412/content.html).
 
 The 72-hour and 144-hour transit policies were replaced on 17 December 2024 by a single
@@ -74,7 +80,9 @@ Everything policy-related lives in `data.js`:
 
 - `POLICY` — duration, review date, source URL, official counts
 - `TRANSIT_COUNTRIES` / `TRANSIT_COUNTRY_ADDED` — who qualifies for 240-hour transit
-- `VISA_FREE_30_DAY` — who skips the transit rules entirely
+- `VISA_FREE_30_DAY` — unilateral 30-day entry; skips the transit rules entirely
+- `MUTUAL_VISA_EXEMPT` — bilateral agreements; also skips the transit rules (kept
+  disjoint from `VISA_FREE_30_DAY`)
 - `PORTS` — designated ports, grouped by province
 - `STAY_REGIONS` / `EXCLUDED_REGIONS` — where you may travel
 

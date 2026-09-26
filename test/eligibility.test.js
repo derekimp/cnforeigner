@@ -94,6 +94,28 @@ const cases = [
     contains: ["third"]
   },
   {
+    name: "Australia is on the 30-day list, so a round trip is fine",
+    passport: "Australia", origin: "Australia", entry: "PEK", exit: "PEK",
+    destination: "Australia",
+    expect: "eligible",
+    contains: ["30 days", "unilateral"]
+  },
+  {
+    name: "mutual-exemption nationality gets the bilateral answer",
+    passport: "Thailand", origin: "Thailand", entry: "PEK", exit: "PEK",
+    destination: "Thailand",
+    expect: "eligible",
+    contains: ["mutual visa exemption"],
+    notContains: ["Bring with you"]
+  },
+  {
+    name: "Yunnan transit lists its permitted cities, not the whole province",
+    passport: "United States", origin: "United States", entry: "LJG", exit: "KMG",
+    destination: "Japan",
+    expect: "eligible",
+    contains: ["Lijiang", "Xishuangbanna"]
+  },
+  {
     name: "incomplete form asks for the missing fields",
     passport: "United States", origin: null, entry: null, exit: null, destination: null,
     expect: "info",
@@ -113,8 +135,20 @@ function dataChecks() {
   dup(TRANSIT_COUNTRIES, "TRANSIT_COUNTRIES");
   dup(VISA_FREE_30_DAY, "VISA_FREE_30_DAY");
   dup(DESTINATIONS, "DESTINATIONS");
+  dup(MUTUAL_VISA_EXEMPT, "MUTUAL_VISA_EXEMPT");
 
-  const missing = [...TRANSIT_COUNTRIES, ...VISA_FREE_30_DAY]
+  const both = VISA_FREE_30_DAY.filter((c) => MUTUAL_VISA_EXEMPT.includes(c));
+  if (both.length) {
+    problems.push(`on both the unilateral and mutual lists: ${both.join(", ")}`);
+  }
+
+  const noOrigin = [...VISA_FREE_30_DAY, ...MUTUAL_VISA_EXEMPT]
+    .filter((c) => !DESTINATIONS.includes(c));
+  if (noOrigin.length) {
+    problems.push(`not selectable as origin or destination: ${noOrigin.join(", ")}`);
+  }
+
+  const missing = [...TRANSIT_COUNTRIES, ...VISA_FREE_30_DAY, ...MUTUAL_VISA_EXEMPT]
     .filter((c) => !ALL_COUNTRIES.includes(c));
   if (missing.length) {
     problems.push(`not selectable in the passport dropdown: ${missing.join(", ")}`);

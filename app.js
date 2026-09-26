@@ -15,6 +15,7 @@ const OTHER_PORT = "__other__";
 
 const transitSet = new Set(TRANSIT_COUNTRIES);
 const visaFreeSet = new Set(VISA_FREE_30_DAY);
+const mutualSet = new Set(MUTUAL_VISA_EXEMPT);
 
 // ============================================================
 // Dropdowns
@@ -34,16 +35,17 @@ function addGroup(selectEl, label, countries) {
   selectEl.appendChild(group);
 }
 
-// Passport: the two groups that change the outcome, then everyone else.
-const visaFreePassports = ALL_COUNTRIES.filter((c) => visaFreeSet.has(c));
+// Passport: the groups that change the outcome, then everyone else.
+const noVisa = (c) => visaFreeSet.has(c) || mutualSet.has(c);
+const visaFreePassports = ALL_COUNTRIES.filter(noVisa);
 const transitOnlyPassports = ALL_COUNTRIES.filter(
-  (c) => transitSet.has(c) && !visaFreeSet.has(c)
+  (c) => transitSet.has(c) && !noVisa(c)
 );
 const otherPassports = ALL_COUNTRIES.filter(
-  (c) => !transitSet.has(c) && !visaFreeSet.has(c)
+  (c) => !transitSet.has(c) && !noVisa(c)
 );
 
-addGroup(passportSelect, "30-day visa-free entry", visaFreePassports);
+addGroup(passportSelect, "Visa-free entry (no transit rules)", visaFreePassports);
 addGroup(passportSelect, `${POLICY.transitHours}-hour visa-free transit`, transitOnlyPassports);
 addGroup(passportSelect, "Visa or 24-hour transit only", otherPassports);
 
@@ -182,6 +184,22 @@ checkBtn.addEventListener("click", () => {
        third-country rule applies only to the transit policies.</p>
        <p class="muted">This policy currently runs to 31 December 2026 for most
        nationalities. Confirm the end date before you travel.</p>`);
+    return;
+  }
+
+  // A bilateral agreement also removes the transit conditions, but its terms
+  // (length of stay, days per 180) are set country by country.
+  if (mutualSet.has(passport)) {
+    showResult("eligible", "No visa needed — mutual visa exemption",
+      `<p>China and <strong>${safePassport}</strong> have a mutual visa exemption
+       agreement, so ordinary passport holders can enter mainland China without a
+       visa, in most cases for up to <strong>30 days</strong> per visit. No transit
+       conditions apply: no onward ticket to a third country, no designated port,
+       no restricted stay area.</p>
+       <p>Your route (<strong>${safeOrigin}</strong> &rarr; China &rarr;
+       <strong>${safeDestination}</strong>) does not affect this.</p>
+       <p class="muted">Each agreement sets its own limits, and some cap the total
+       days in any 180. Check the terms for your passport before you travel.</p>`);
     return;
   }
 
