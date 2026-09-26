@@ -6,136 +6,88 @@ const entryMethodSelect = document.getElementById("entry-method");
 const entryPortSelect = document.getElementById("entry-port");
 const exitMethodSelect = document.getElementById("exit-method");
 const exitPortSelect = document.getElementById("exit-port");
+const originSelect = document.getElementById("origin");
 const destinationSelect = document.getElementById("destination");
 const checkBtn = document.getElementById("check-btn");
 const resultDiv = document.getElementById("result");
 
+const OTHER_PORT = "__other__";
+
+const transitSet = new Set(TRANSIT_COUNTRIES);
+const visaFreeSet = new Set(VISA_FREE_30_DAY);
+const mutualSet = new Set(MUTUAL_VISA_EXEMPT);
+
 // ============================================================
-// Populate passport & destination dropdowns
+// Dropdowns
 // ============================================================
-function populateCountries(selectEl, countries) {
-  countries.forEach((c) => {
-    const opt = document.createElement("option");
-    opt.value = c;
-    opt.textContent = c;
-    selectEl.appendChild(opt);
-  });
+function addOption(parent, value, text) {
+  const opt = document.createElement("option");
+  opt.value = value;
+  opt.textContent = text;
+  parent.appendChild(opt);
+  return opt;
 }
 
-// Passport dropdown: eligible 54 countries first, then divider, then all others
-const eligibleSet = new Set(ELIGIBLE_COUNTRIES_144);
-const sortedEligible = [...ELIGIBLE_COUNTRIES_144].sort();
-const otherCountries = ALL_COUNTRIES.filter((c) => !eligibleSet.has(c)).sort();
+function addGroup(selectEl, label, countries) {
+  const group = document.createElement("optgroup");
+  group.label = label;
+  countries.forEach((c) => addOption(group, c, c));
+  selectEl.appendChild(group);
+}
 
-// Add eligible group
-const eligibleGroup = document.createElement("optgroup");
-eligibleGroup.label = "Eligible for 144h / 72h transit";
-sortedEligible.forEach((c) => {
-  const opt = document.createElement("option");
-  opt.value = c;
-  opt.textContent = c;
-  eligibleGroup.appendChild(opt);
-});
-passportSelect.appendChild(eligibleGroup);
-
-// Add other group
-const otherGroup = document.createElement("optgroup");
-otherGroup.label = "Other countries (24h transit only)";
-otherCountries.forEach((c) => {
-  const opt = document.createElement("option");
-  opt.value = c;
-  opt.textContent = c;
-  otherGroup.appendChild(opt);
-});
-passportSelect.appendChild(otherGroup);
-
-// Destination: all countries except China
-const destinations = ALL_COUNTRIES.filter(
-  (c) => c !== "China" && c !== "Hong Kong" && c !== "Macau" && c !== "Taiwan"
+// Passport: the groups that change the outcome, then everyone else.
+const noVisa = (c) => visaFreeSet.has(c) || mutualSet.has(c);
+const visaFreePassports = ALL_COUNTRIES.filter(noVisa);
+const transitOnlyPassports = ALL_COUNTRIES.filter(
+  (c) => transitSet.has(c) && !noVisa(c)
 );
-populateCountries(destinationSelect, destinations.sort());
+const otherPassports = ALL_COUNTRIES.filter(
+  (c) => !transitSet.has(c) && !noVisa(c)
+);
 
-// Also add the special regions since they count as "third country/region"
-["Hong Kong", "Macau", "Taiwan"].forEach((r) => {
-  const opt = document.createElement("option");
-  opt.value = r;
-  opt.textContent = r;
-  destinationSelect.appendChild(opt);
+addGroup(passportSelect, "Visa-free entry (no transit rules)", visaFreePassports);
+addGroup(passportSelect, `${POLICY.transitHours}-hour visa-free transit`, transitOnlyPassports);
+addGroup(passportSelect, "Visa or 24-hour transit only", otherPassports);
+
+// Both ends of the journey: anywhere outside mainland China.
+DESTINATIONS.forEach((c) => {
+  addOption(originSelect, c, c);
+  addOption(destinationSelect, c, c);
 });
 
 // ============================================================
-// Build flat port lists by method from TRANSIT_ZONES
+// Ports
 // ============================================================
-function getPortsByMethod(method) {
-  const ports = [];
-  for (const [zoneKey, zone] of Object.entries(TRANSIT_ZONES)) {
-    const zonePorts = zone.ports[method] || [];
-    zonePorts.forEach((p) => {
-      ports.push({
-        ...p,
-        zone: zoneKey,
-        zoneLabel: zone.label,
-        duration: zone.duration,
-      });
-    });
-  }
-  return ports;
-}
-
 function populatePorts(selectEl, method) {
-  // Clear existing options
   selectEl.innerHTML = "";
+  addOption(selectEl, "", "Select port...");
 
-  if (!method) {
-    selectEl.innerHTML = '<option value="">Select method first...</option>';
-    selectEl.disabled = true;
-    return;
-  }
+  PORTS.forEach((region) => {
+    const matching = method
+      ? region.ports.filter((p) => p.method === method)
+      : region.ports;
+    if (matching.length === 0) return;
 
-  const ports = getPortsByMethod(method);
-
-  if (ports.length === 0) {
-    selectEl.innerHTML =
-      '<option value="">No ports for this method</option>';
-    selectEl.disabled = true;
-    return;
-  }
-
-  selectEl.disabled = false;
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = "Select port...";
-  selectEl.appendChild(placeholder);
-
-  // Group by zone
-  const byZone = {};
-  ports.forEach((p) => {
-    if (!byZone[p.zoneLabel]) byZone[p.zoneLabel] = [];
-    byZone[p.zoneLabel].push(p);
-  });
-
-  for (const [zoneLabel, zonePorts] of Object.entries(byZone)) {
     const group = document.createElement("optgroup");
-    group.label = zoneLabel;
-    zonePorts.forEach((p) => {
-      const opt = document.createElement("option");
-      opt.value = JSON.stringify({
-        code: p.code,
+    group.label = region.region;
+    matching.forEach((p) => {
+      const value = JSON.stringify({
         name: p.name,
-        zone: p.zone,
-        duration: p.duration,
-        zoneLabel: p.zoneLabel,
+        code: p.code,
+        method: p.method,
+        region: region.region
       });
-      opt.textContent = p.name;
-      group.appendChild(opt);
+      addOption(group, value, `${p.name} (${p.method})`);
     });
     selectEl.appendChild(group);
-  }
+  });
+
+  addOption(selectEl, OTHER_PORT, "My port is not listed");
 }
 
-// ============================================================
-// Cascading selects: method -> port
-// ============================================================
+populatePorts(entryPortSelect, "");
+populatePorts(exitPortSelect, "");
+
 entryMethodSelect.addEventListener("change", () => {
   populatePorts(entryPortSelect, entryMethodSelect.value);
   clearResult();
@@ -146,8 +98,7 @@ exitMethodSelect.addEventListener("change", () => {
   clearResult();
 });
 
-// Clear result on any change
-[passportSelect, entryPortSelect, exitPortSelect, destinationSelect].forEach(
+[passportSelect, entryPortSelect, exitPortSelect, originSelect, destinationSelect].forEach(
   (el) => el.addEventListener("change", clearResult)
 );
 
@@ -158,114 +109,183 @@ function clearResult() {
 }
 
 // ============================================================
-// Eligibility check
+// Rendering helpers
 // ============================================================
-checkBtn.addEventListener("click", () => {
-  const passport = passportSelect.value;
-  const entryMethod = entryMethodSelect.value;
-  const entryPortRaw = entryPortSelect.value;
-  const exitMethod = exitMethodSelect.value;
-  const exitPortRaw = exitPortSelect.value;
-  const destination = destinationSelect.value;
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+}
 
-  // Validation
-  if (!passport || !entryMethod || !entryPortRaw || !exitMethod || !exitPortRaw || !destination) {
-    showResult("info", "Missing Information", "Please fill in all fields before checking.");
-    return;
-  }
+function stayAreaHtml() {
+  const items = STAY_REGIONS.map((r) =>
+    r.scope === "all"
+      ? escapeHtml(r.name)
+      : `${escapeHtml(r.name)} <em>(${r.scope.map(escapeHtml).join(", ")} only)</em>`
+  );
+  return `<p>You may travel freely between all ${POLICY.regionCount} permitted areas,
+    including across provincial boundaries:</p>
+    <p class="regions">${items.join(" &middot; ")}</p>
+    <p class="muted">Not covered: ${EXCLUDED_REGIONS.map(escapeHtml).join(", ")}.</p>`;
+}
 
-  const entryPort = JSON.parse(entryPortRaw);
-  const exitPort = JSON.parse(exitPortRaw);
-  const isEligible144 = eligibleSet.has(passport);
-
-  // ----- Rule: destination must be a third country (not China) -----
-  // Already filtered in the dropdown, but sanity check
-  if (destination === "China") {
-    showResult(
-      "ineligible",
-      "Not Eligible",
-      "Transit visa-free policy requires you to be transiting <strong>through</strong> China to a third country or region. Your destination cannot be mainland China."
-    );
-    return;
-  }
-
-  // ----- 24-hour transit (any nationality) -----
-  // All foreign nationals can transit for up to 24 hours without a visa
-  // if they hold a connecting ticket to a third country.
-  // They must stay within the airport (some ports allow city stay).
-
-  // ----- 144/72-hour transit -----
-  if (!isEligible144) {
-    // Not in the 54-country list — only 24h transit
-    showResult(
-      "info",
-      "24-Hour Transit Only",
-      `<p>Passport holders from <strong>${passport}</strong> are not on the list of 54 countries eligible for 144/72-hour visa-free transit.</p>
-       <p>However, you may still be eligible for <strong>24-hour visa-free transit</strong> at most international ports, provided you:</p>
-       <ul>
-         <li>Hold a confirmed onward ticket to a third country/region</li>
-         <li>Stay within the permitted area (often airport-only)</li>
-       </ul>
-       <p>Contact the airline or the port's immigration office for details.</p>`
-    );
-    return;
-  }
-
-  // Check if entry and exit are at the same zone
-  const sameZone = entryPort.zone === exitPort.zone;
-  const entryZone = TRANSIT_ZONES[entryPort.zone];
-  const exitZone = TRANSIT_ZONES[exitPort.zone];
-
-  // The key rule: you can enter and exit from the SAME zone's ports.
-  // Cross-zone transit is allowed for some linked zones, but the standard
-  // policy is same-zone entry/exit.
-  // Some special cross-zone combos exist (e.g., enter Beijing, exit Tianjin
-  // is fine since they're in the same zone).
-
-  if (sameZone) {
-    const duration = entryPort.duration;
-    const zone = TRANSIT_ZONES[entryPort.zone];
-    let extra = zone.note ? `<p><em>${zone.note}</em></p>` : "";
-
-    showResult(
-      "eligible",
-      `Eligible — ${duration}-Hour Visa-Free Transit`,
-      `<p>Great news! As a <strong>${passport}</strong> passport holder, you are eligible for <strong>${duration}-hour visa-free transit</strong>.</p>
-       <ul>
-         <li><strong>Entry:</strong> ${entryPort.name}</li>
-         <li><strong>Exit:</strong> ${exitPort.name}</li>
-         <li><strong>Stay area:</strong> ${zone.stayArea}</li>
-         <li><strong>Max stay:</strong> ${duration} hours from arrival</li>
-         <li><strong>Destination:</strong> ${destination}</li>
-       </ul>
-       <p>You must carry:</p>
-       <ul>
-         <li>Valid passport (6+ months recommended)</li>
-         <li>Confirmed onward ticket to <strong>${destination}</strong></li>
-         <li>Completed arrival card</li>
-       </ul>
-       ${extra}`
-    );
-  } else {
-    // Different zones — not standard eligible for visa-free transit
-    showResult(
-      "ineligible",
-      "Not Eligible for Visa-Free Transit",
-      `<p>Your entry port (<strong>${entryPort.name}</strong>) is in the <strong>${entryZone.label}</strong> zone, but your exit port (<strong>${exitPort.name}</strong>) is in the <strong>${exitZone.label}</strong> zone.</p>
-       <p>The transit visa-free policy requires you to <strong>enter and exit from ports within the same transit zone</strong>.</p>
-       <p>Options:</p>
-       <ul>
-         <li>Change your exit port to one within the <strong>${entryZone.label}</strong> zone</li>
-         <li>Change your entry port to one within the <strong>${exitZone.label}</strong> zone</li>
-         <li>Apply for a standard Chinese visa at your nearest embassy</li>
-       </ul>`
-    );
-  }
-});
+function requirementsHtml() {
+  return `<p>Bring with you:</p><ul>${TRANSIT_REQUIREMENTS.map(
+    (r) => `<li>${escapeHtml(r)}</li>`
+  ).join("")}</ul>`;
+}
 
 function showResult(type, title, body) {
   resultDiv.className = type;
   resultDiv.style.display = "block";
-  resultDiv.innerHTML = `<h3>${title}</h3>${body}`;
+  resultDiv.innerHTML = `<h3>${escapeHtml(title)}</h3>${body}`;
   resultDiv.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
+
+// ============================================================
+// Eligibility check
+// ============================================================
+checkBtn.addEventListener("click", () => {
+  const passport = passportSelect.value;
+  const entryRaw = entryPortSelect.value;
+  const exitRaw = exitPortSelect.value;
+  const origin = originSelect.value;
+  const destination = destinationSelect.value;
+
+  if (!passport || !entryRaw || !exitRaw || !origin || !destination) {
+    showResult("info", "Missing information",
+      "<p>Please fill in every field before checking.</p>");
+    return;
+  }
+
+  // A transit stay has to end outside mainland China.
+  if (destination === "China") {
+    showResult("ineligible", "Not a transit journey",
+      `<p>Visa-free transit requires you to be travelling <strong>through</strong>
+       mainland China to a third country or region. Hong Kong, Macao and Taiwan
+       all count as third regions; mainland China does not.</p>`);
+    return;
+  }
+
+  const safePassport = escapeHtml(passport);
+  const safeOrigin = escapeHtml(origin);
+  const safeDestination = escapeHtml(destination);
+
+  // The 30-day policy has no transit conditions at all, so it wins outright.
+  if (visaFreeSet.has(passport)) {
+    showResult("eligible", "No visa needed — 30 days visa-free",
+      `<p><strong>${safePassport}</strong> passport holders can enter mainland China
+       visa-free for up to <strong>30 days</strong> under the unilateral visa-free
+       policy. You do not need to satisfy any transit conditions: no onward ticket
+       to a third country, no designated port, no restricted stay area.</p>
+       <p>You are free to travel anywhere in mainland China. Your route
+       (<strong>${safeOrigin}</strong> &rarr; China &rarr; <strong>${safeDestination}</strong>)
+       does not affect this — a return to where you came from is fine, because the
+       third-country rule applies only to the transit policies.</p>
+       <p class="muted">This policy currently runs to 31 December 2026 for most
+       nationalities. Confirm the end date before you travel.</p>`);
+    return;
+  }
+
+  // A bilateral agreement also removes the transit conditions, but its terms
+  // (length of stay, days per 180) are set country by country.
+  if (mutualSet.has(passport)) {
+    showResult("eligible", "No visa needed — mutual visa exemption",
+      `<p>China and <strong>${safePassport}</strong> have a mutual visa exemption
+       agreement, so ordinary passport holders can enter mainland China without a
+       visa, in most cases for up to <strong>30 days</strong> per visit. No transit
+       conditions apply: no onward ticket to a third country, no designated port,
+       no restricted stay area.</p>
+       <p>Your route (<strong>${safeOrigin}</strong> &rarr; China &rarr;
+       <strong>${safeDestination}</strong>) does not affect this.</p>
+       <p class="muted">Each agreement sets its own limits, and some cap the total
+       days in any 180. Check the terms for your passport before you travel.</p>`);
+    return;
+  }
+
+  // Both transit policies require onward travel to a *third* country: the place
+  // you arrive from and the one you leave for have to differ. A round trip
+  // through China is not a transit journey.
+  if (origin === destination) {
+    showResult("ineligible", "Not a transit journey",
+      `<p>You are arriving from <strong>${safeOrigin}</strong> and leaving for
+       <strong>${safeDestination}</strong>. Visa-free transit requires onward travel to a
+       <strong>third</strong> country or region, so the two ends must differ. Returning to
+       where you came from does not qualify under either the ${POLICY.transitHours}-hour
+       or the 24-hour policy.</p>
+       <p>Entering on the transit policy without continuing to a third country is
+       treated as illegal entry, so this is not a technicality to work around.</p>
+       <p>Your options:</p>
+       <ul>
+         <li>Continue to a different country or region. Hong Kong, Macao and Taiwan each
+             count as a third region, so ${safeOrigin} &rarr; China &rarr; Hong Kong
+             qualifies even if you fly home from there afterwards.</li>
+         <li>Apply for a Chinese visa before you travel.</li>
+       </ul>`);
+    return;
+  }
+
+  if (!transitSet.has(passport)) {
+    showResult("info", "24-hour transit only",
+      `<p><strong>${safePassport}</strong> is not among the ${TRANSIT_COUNTRIES.length}
+       nationalities eligible for ${POLICY.transitHours}-hour visa-free transit.</p>
+       <p>You can still use <strong>24-hour visa-free transit</strong>: with a confirmed
+       onward ticket to a third country you may stay airside at any international
+       airport without a visa. Leaving the airport generally requires a visa.</p>
+       <p>For a longer stay, apply for a Chinese visa before you travel.</p>`);
+    return;
+  }
+
+  // Eligible nationality — now check both ports are designated.
+  const entryUnlisted = entryRaw === OTHER_PORT;
+  const exitUnlisted = exitRaw === OTHER_PORT;
+
+  if (entryUnlisted || exitUnlisted) {
+    const which = entryUnlisted && exitUnlisted
+      ? "Neither of your ports is"
+      : `Your ${entryUnlisted ? "entry" : "exit"} port is not`;
+    showResult("info", "Check your port against the official list",
+      `<p><strong>${safePassport}</strong> passport holders are eligible for
+       ${POLICY.transitHours}-hour visa-free transit, but the policy only applies at
+       designated ports. ${which} in this tool's list.</p>
+       <p>This tool tracks the ${POLICY.officialPortCount} designated ports, but the
+       official list changes often. Check your port against the
+       <a href="${POLICY.sourceUrl}" target="_blank" rel="noopener">National Immigration
+       Administration list</a> before relying on this.</p>`);
+    return;
+  }
+
+  const entryPort = JSON.parse(entryRaw);
+  const exitPort = JSON.parse(exitRaw);
+  const addedOn = TRANSIT_COUNTRY_ADDED[passport];
+  const crossRegion = entryPort.region !== exitPort.region;
+
+  const addedNote = addedOn
+    ? `<p class="muted">${safePassport} was added to the policy on
+       ${escapeHtml(addedOn)}. If an airline is working from an older list, the
+       National Immigration Administration page is the authority.</p>`
+    : "";
+
+  const crossRegionNote = crossRegion
+    ? `<p>You are entering in <strong>${escapeHtml(entryPort.region)}</strong> and
+       leaving from <strong>${escapeHtml(exitPort.region)}</strong>. Since
+       ${POLICY.effectiveFrom} that is allowed — entry and exit ports no longer have
+       to be in the same region.</p>`
+    : "";
+
+  showResult("eligible", `Eligible — ${POLICY.transitHours}-hour visa-free transit`,
+    `<p>As a <strong>${safePassport}</strong> passport holder travelling
+     <strong>${safeOrigin}</strong> &rarr; China &rarr; <strong>${safeDestination}</strong>,
+     you qualify for <strong>${POLICY.transitHours} hours (10 days)</strong> in mainland
+     China without a visa. Your two ends differ, so this counts as transit to a third
+     country.</p>
+     <ul>
+       <li><strong>Entry:</strong> ${escapeHtml(entryPort.name)} (${escapeHtml(entryPort.region)})</li>
+       <li><strong>Exit:</strong> ${escapeHtml(exitPort.name)} (${escapeHtml(exitPort.region)})</li>
+       <li><strong>Clock starts:</strong> 00:00 on the day after you arrive</li>
+     </ul>
+     ${crossRegionNote}
+     ${stayAreaHtml()}
+     ${requirementsHtml()}
+     ${addedNote}`);
+});

@@ -1,0 +1,30 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    # A same-repo pull request is already covered by its branch's push event.
+    # Without this, every push to a PR branch runs the suite twice.
+    if: >-
+      github.event_name == 'push' ||
+      github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run tests
+        run: npm test

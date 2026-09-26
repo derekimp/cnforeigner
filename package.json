@@ -1,0 +1,12 @@
+{
+  "name": "cnforeigner",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Eligibility checker for China's visa-free entry and transit policies",
+  "scripts": {
+    "test": "node test/eligibility.test.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}
